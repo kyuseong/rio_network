@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "SocketConfig.h"
 #include "SocketUtils.h"
@@ -82,7 +82,7 @@ public:
 	{
 		if (ResultNums >= m_Size)
 		{
-			// ¿À¸ð ²ËÂ÷¼­ ¿À³×
+			// ì˜¤ëª¨ ê½‰ì°¨ì„œ ì˜¤ë„¤
 			if (m_Size + 256 < 2048)
 			{
 				delete m_Buff;

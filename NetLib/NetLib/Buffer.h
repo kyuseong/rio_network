@@ -1,11 +1,11 @@
-#pragma once
+ï»¿#pragma once
 
-// °Á ¹öÆÛ
+// ê± ë²„í¼
 class Buffer final
 {
 protected:
-	char	*m_Buffer;		// ¹öÆÛ
-	int		m_BufSize;		// ¹öÆÛ »çÀÌÁî
+	char	*m_Buffer;		// ë²„í¼
+	int		m_BufSize;		// ë²„í¼ ì‚¬ì´ì¦ˆ
 
 public:
 	Buffer(int Size = 4096)

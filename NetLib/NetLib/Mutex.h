@@ -4,14 +4,14 @@
 
 #include <atomic>
 
-// ∏€≈÷±∏∏Æ mutex
+// 
 class NullMutex {
 public:
 	inline void lock() {}
 	inline void unlock() {}
 };
 
-// Ω∫«…∂Ù
+//  
 class SpinLock {
 	std::atomic_flag locked = ATOMIC_FLAG_INIT;
 public:

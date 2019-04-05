@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <sdkddkver.h>
 
@@ -6,7 +6,7 @@
 
 #include <winsock2.h>
 
-// ±âº» Çì´õ
+// 
 #include <windows.h>
 #include <winnt.h>
 
