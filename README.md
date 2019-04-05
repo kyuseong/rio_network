@@ -4,7 +4,9 @@ It is a tcp server / client implemented by microsoft registered io (RIO for shor
 It is well suited for implementing servers such as game servers or chat servers. 
 There are many examples of echo server, but this is more advanced.
 
-I hope this helps.
+Oh I almost forgot. There are also iocp implementations.
+
+I hope this will help in some way.
 
 ## server code
 
