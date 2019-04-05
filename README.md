@@ -1,5 +1,10 @@
 # rio_network
 
+It is a tcp server / client implemented by microsoft registered io (RIO for short).
+It is well suited for implementing servers such as game servers or chat servers. 
+There are many examples of echo server, but this is more advanced.
+
+I hope this helps.
 
 ## server code
 
