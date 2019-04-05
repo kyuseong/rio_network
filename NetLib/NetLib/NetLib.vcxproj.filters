@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Misc">
+      <UniqueIdentifier>{99cb7643-f5a1-4d3b-8eb1-91f6ba4224a2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Network">
+      <UniqueIdentifier>{69203677-4022-41ed-a395-a2b8376384ca}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Buffer.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Network.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="SocketConfig.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="NetLibPCH.h" />
+    <ClInclude Include="Output.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="AssertEx.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="NetLib.h" />
+    <ClInclude Include="RIOBuffer.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Session.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="iNetwork.h" />
+    <ClInclude Include="SocketUtils.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="IOCompletionQueue.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="RingBuffer.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Mutex.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="TypesCommon.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Allocator.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Network.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="NetLibPCH.cpp" />
+    <ClCompile Include="Output.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="Session.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="SocketUtils.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="IOCompletionQueue.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
