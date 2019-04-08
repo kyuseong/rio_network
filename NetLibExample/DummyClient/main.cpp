@@ -10,17 +10,28 @@
 
 using namespace std;
 
-int main(int , TCHAR** )
+int main(int argc, char** argv)
 {
+	if (argc != 3)
+	{
+		wprintf(L"usage: server.exe 0.0.0.0 12000\n");
+
+		return -1;
+	}
+
+	std::wstring Address = s2ws(argv[1]);
+	int Port = atoi(argv[2]);
+
 	setlocale(LC_ALL, "Korean");
+
+	g_DummyClient->Connect(Address.c_str(), Port);
 
 	while (1)
 	{
-		g_DummyClient->ConnectServer();
 
-	Sleep(1000);
+		//Sleep(1000);
 
-		g_DummyClient->CloseChatServer();
+		//g_DummyClient->Close();
 
 	}
 	g_DummyClient->Shutdown();

@@ -6,15 +6,44 @@
 #include "DummySession.h"
 #include "DummyServer.h"
 
+
+class AAA
+{
+public:
+	/// \brief 메모리 할당
+	void* operator new (size_t size)
+	{
+		printf("new AAA\n");
+		return malloc(size);
+	}
+
+	/// \brief 메모리 해제
+	void operator delete (void* ptr)
+	{
+		free(ptr);
+		printf("delete AAA\n");
+	}
+};
+
 extern std::atomic<int> g_Count;
 
-int main(int , wchar_t** )
+int main(int argc, char** argv)
 {
-	setlocale(LC_ALL, "Korean");
+	if (argc != 3)
+	{
+		wprintf(L"usage: server.exe 0.0.0.0 12000\n");
+
+		return -1;
+	}
+	
+	std::wstring Address = s2ws(argv[1]);
+	int Port = atoi( argv[2] );
 
 	wprintf(L"start\n");
 
-	DummyServer::GetInstance()->Start();
+	setlocale(LC_ALL, "Korean");
+
+	DummyServer::GetInstance()->Start(Address.c_str(), Port);
 
 	int Seq = 0;
 	while (1)

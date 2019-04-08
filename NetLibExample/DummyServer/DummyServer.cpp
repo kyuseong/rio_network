@@ -21,9 +21,9 @@ DummyServer::~DummyServer()
 {
 }
 
-void DummyServer::Start()
+void DummyServer::Start(const wchar_t* Address, int Port)
 {
-	m_Network->StartAcceptor(L"", 10031, true);
+	m_Network->StartAcceptor(Address, Port, true);
 }
 
 void DummyServer::Shutdown()

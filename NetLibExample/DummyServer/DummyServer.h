@@ -19,7 +19,7 @@ public:
 	~DummyServer();
 
 	///	서버 시작
-	void	Start();
+	void	Start(const wchar_t* Address, int Port);
 
 	/// 서버 종료
 	void	Shutdown();

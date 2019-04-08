@@ -3,23 +3,22 @@
 
 #include "Network.h"
 
-class ClientNet : public Session
+class DummySession : public Session
 {
 public:
-	bool			m_Connect;
-	short			m_Mode;
-	int				m_No;
-	std::mutex		m_Lock;
+	bool m_Connect;
+	short m_Mode;
+	int m_No;
+	std::mutex m_Lock;
 	std::wstring	m_UserName;
-
-	int				m_Seq = 0;
+	int m_Seq = 0;
 private:
-	typedef void (ClientNet::*ProcessFunc)(char * pData);
+	typedef void (DummySession::*ProcessFunc)(char * pData);
 	ProcessFunc	m_ProcessFunc[10];
 
 public:
-	ClientNet(Network &net, unsigned short ID);
-	virtual ~ClientNet();
+	DummySession(Network &net, unsigned short ID);
+	virtual ~DummySession();
 
 	virtual void OnAccept(const wchar_t*, const int) {}
 	virtual void OnConnect(const wchar_t* , const int );
@@ -33,13 +32,10 @@ public:
 class DummyClient
 {
 public:
-	std::mutex		m_Lock;
-	iNetwork* m_NetworkClient;		///	소켓
+	std::mutex m_Lock;
+	iNetwork* m_NetworkClient;
 	std::vector<Session*> m_ClientList;		///	소켓
 
-private:
-	std::wstring	m_IP;				///	IP
-	unsigned int	m_Port;				///	포트
 public:
 	DummyClient();
 	~DummyClient();
@@ -47,11 +43,11 @@ public:
 	static DummyClient* GetInstance() { static DummyClient instance; return &instance; }
 	
 	///	 서버에 연결
-	bool	ConnectServer();
-	/// 끊기
-	bool	CloseChatServer();
+	bool	Connect(const wchar_t* Address, const int Port);
+	// 끊기
+	bool	Close();
 
-	///		연결 종료
+	// 연결 종료
 	void	Shutdown();
 	
 
