@@ -44,7 +44,7 @@ I hope this will help in some way.
 
   m_NetworkClient->Start([](Network& Net, unsigned short SID)
   {
-    return new ClientNet(Net, SID);
+    return new DummySession(Net, SID);
   });
   
   auto ClientNet = m_NetworkClient->ConnectSession(m_IP.c_str(), m_Port);
