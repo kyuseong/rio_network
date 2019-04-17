@@ -1,12 +1,8 @@
 #pragma once
 
-#include <MSWSock.h>
-#include <WinSock2.h>
-#include <vector>
-
+#include "iNetwork.h"
 #include "SocketConfig.h"
 #include "Session.h"
-#include "iNetwork.h"
 
 class IOCompletionPort;
 class NetworkIOModel;
@@ -67,33 +63,34 @@ public:
 	// 시작 시킴
 	// - session pool 을 만들고
 	// - io / proc thread 들을 시작시킴
-	void Start(CreateClientSessionFunc CreateFunction) override;
+	virtual void Start(CreateClientSessionFunc CreateFunction) override;
 	// 중단 시킴
 	void Shutdown() override;
 	// Start Acceptor
-	void StartAcceptor(const wchar_t* ListenAddr, int ListenPort, bool NoDelay) override;
+	virtual void StartAcceptor(const wchar_t* ListenAddr, int ListenPort, bool NoDelay) override;
 	// Stop Acceptor
-	void StopAcceptor() override;
+	virtual void StopAcceptor() override;
 
 	// 서버에 접속한다.
 	// - blocking 
-	Session * ConnectSession(const wchar_t* TargetAddress, const int TargetPort) override;
+	iSessionStub * ConnectSession(const wchar_t* TargetAddress, const int TargetPort) override;
 	// 클라이언트의 소켓 접속을 강제로 끊는다.
-	virtual void	DisconnectSession(Session * Session) override;
-	
+	void DisconnectSession(Session* Sess);
+	// 
+	virtual void DisconnectSession(int SessionID);	
 	//-------------------------------------------------------------------------
 	// MISC
 	//-------------------------------------------------------------------------
-	ePROCESS_MODE	GetProcessMode() const override { return m_ProcessMode; }
+	virtual ePROCESS_MODE	GetProcessMode() const override { return m_ProcessMode; }
 
 	//소켓 id를 구한다.
 	Session* GetSession(unsigned short SessionID) { return SessionID < m_MaxSessionCount ? m_ActiveSessionList[SessionID] : NULL; }
 	// 최대 세션수
-	size_t	GetMaxSessionCount() const override { return m_MaxSessionCount; }
+	virtual size_t	GetMaxSessionCount() const override { return m_MaxSessionCount; }
 	// 현재 세션수 
-	unsigned short	GetSessionCount() const override { return m_SessionCount; }
+	virtual unsigned short	GetSessionCount() const override { return m_SessionCount; }
 
-	bool IsConnected(unsigned short nIndex) override;
+	virtual bool IsConnected(unsigned short nIndex) override;
 
 	//-------------------------------------------------------------------------
 	// 스레드

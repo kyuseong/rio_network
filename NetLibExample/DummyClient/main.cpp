@@ -24,15 +24,16 @@ int main(int argc, char** argv)
 
 	setlocale(LC_ALL, "Korean");
 
-	g_DummyClient->Connect(Address.c_str(), Port);
-
 	while (1)
 	{
 
-		//Sleep(1000);
+		g_DummyClient->Connect(Address.c_str(), Port);
 
-		//g_DummyClient->Close();
+		Sleep(1000);
 
+		g_DummyClient->Close();
+
+		Sleep(1000);
 	}
 	g_DummyClient->Shutdown();
 

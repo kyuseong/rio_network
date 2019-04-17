@@ -8,7 +8,7 @@ class RingBuffer;
 class RIOBuffer;
 class SessionIOModel;
 class OverlappedBuffer;
-
+class iSessionStub;
 
 enum : unsigned int 
 {
@@ -32,7 +32,7 @@ enum eDISCONNECT_REASON
 };
 
 // 접속 세션
-class Session
+class Session : public iSessionProxy
 {
 	friend class Network;
 	friend class SessionIOModel_RIO;
@@ -43,6 +43,8 @@ class Session
 	SOCKET			m_Socket;			// 소켓 핸들
 	const int		m_ID;				// 소캣 고유 아이디
 	
+	iSessionStub*		m_iSession;
+
 	eDISCONNECT_REASON m_DisconnectReason;	// 접속 해제된 이유
 
 	Buffer*			m_RecvIOBuffer;		// wsarecv 에 걸리는 buffer
@@ -87,7 +89,7 @@ class Session
 	DWORD			m_ProcTime;
 #endif
 public:
-	Session(Network &Net, unsigned short SessionID, const unsigned int SendBufSize = SEND_SIZE, const unsigned int RecvBufSize = RECV_SIZE);
+	Session(Network &Net, unsigned short SessionID, iSessionStub* SS, const unsigned int SendBufSize = SEND_SIZE, const unsigned int RecvBufSize = RECV_SIZE);
 	virtual ~Session();
 	Session(const Session & rhs) = delete;
 	Session& operator=(Session & rhs) = delete;
@@ -150,32 +152,48 @@ private:
 	// 이 부분을 구현해서 처리하세요~
 	//----------------------------------------------------------------------------
 protected:
-	virtual void OnAccept(const wchar_t*, const int) = 0;
-	virtual void OnConnect(const wchar_t* TargetAddress, const int TargetPort) = 0;
-	virtual void OnClose() = 0;
-	virtual void OnDispatch(char * Data, unsigned int Len) = 0;
+	void OnAccept(const wchar_t* TargetAddress, const int TargetPort)
+	{
+		m_iSession->OnAccept(this, TargetAddress, TargetPort);
+	}
+	void OnConnect(const wchar_t* TargetAddress, const int TargetPort)
+	{
+		m_iSession->OnConnect(this, TargetAddress, TargetPort);
+	}
+	void OnClose()
+	{
+		m_iSession->OnClose(this);
+	}
+	void OnDispatch(char * Data, unsigned int Len)
+	{
+		m_iSession->OnDispatch(this, Data, Len);
+	}
 
 	//----------------------------------------------------------------------------
 	// Misc
 	//----------------------------------------------------------------------------
 public:
-	virtual bool IsConnected() { return m_Socket != INVALID_SOCKET && m_Connect; }
+	virtual bool IsConnected() const override { return m_Socket != INVALID_SOCKET && m_Connect; }
 	// 소켓 핸들을 구하기
 	SOCKET GetSocket() const { return m_Socket; }
 	// 고유 번호 구하기
-	int GetSessionID() const { return m_ID; }
+	virtual int GetSessionID() const override { return m_ID; }
 	// 원격 클라이언트의 접속 ip 구하기
-	const wchar_t*	GetPeerIP()		const { return m_PeerIP.c_str(); }
+	virtual const wchar_t*	GetPeerIP()		const override { return m_PeerIP.c_str(); }
 	// 원격 클라이언트의 접속 포트 구하기
-	const unsigned short GetPeerPort() const { return m_PeerPort; }
+	virtual const unsigned short GetPeerPort() const override { return m_PeerPort; }
 	// 접속 할 서버의 IP (클라이언트인 경우)
-	const wchar_t* GetTargetIP() { return m_TargetIP.c_str(); }
+	virtual const wchar_t* GetTargetIP() const override { return m_TargetIP.c_str(); }
 	// 접속 할 서버의 PORT (클라이언트인 경우)
-	const unsigned short GetTargetPort() const { return m_TargetPort; }
+	virtual const unsigned short GetTargetPort() const override { return m_TargetPort; }
 
 	void SetThreadID(int ThreadID);
 	int GetThreadID() const { return m_ThreadId; }
 
+	iSessionStub* GetiSession()
+	{
+		return m_iSession;
+	}
 private:
 	void SetPeerIP(const wchar_t* PeerAddress, const int PeerPort);
 	void SetTargetIP(const wchar_t* TargetAddress, const int TargetPort);

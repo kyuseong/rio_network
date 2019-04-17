@@ -1,9 +1,8 @@
 #pragma once
 
 
-#include "Network.h"
 
-class DummySession : public Session
+class DummySession : public iSessionStub
 {
 public:
 	bool m_Connect;
@@ -12,21 +11,28 @@ public:
 	std::mutex m_Lock;
 	std::wstring	m_UserName;
 	int m_Seq = 0;
+	iSessionProxy* m_Proxy;
 private:
 	typedef void (DummySession::*ProcessFunc)(char * pData);
 	ProcessFunc	m_ProcessFunc[10];
 
 public:
-	DummySession(Network &net, unsigned short ID);
+	DummySession();
 	virtual ~DummySession();
 
-	virtual void OnAccept(const wchar_t*, const int) {}
-	virtual void OnConnect(const wchar_t* , const int );
-	virtual void OnClose();
-	virtual void OnDispatch(char * pData, unsigned int len);
+	virtual void OnAccept(iSessionProxy* Proxy, const wchar_t*, const int) {}
+	virtual void OnConnect(iSessionProxy* Proxy, const wchar_t* , const int );
+	virtual void OnClose(iSessionProxy* Proxy);
+	virtual void OnDispatch(iSessionProxy* Proxy, char * pData, unsigned int len);
 
 	void ResChatMsg(char * pData);
 	void ResChatMsg1(char * pData);
+
+	int GetSessionID() const
+	{
+		return m_Proxy->GetSessionID();
+	}
+
 };
 
 class DummyClient
@@ -34,7 +40,7 @@ class DummyClient
 public:
 	std::mutex m_Lock;
 	iNetwork* m_NetworkClient;
-	std::vector<Session*> m_ClientList;		///	家南
+	std::unordered_map<int, DummySession*> m_ClientList;		///	家南
 
 public:
 	DummyClient();
@@ -49,7 +55,6 @@ public:
 
 	// 楷搬 辆丰
 	void	Shutdown();
-	
 
 };
 

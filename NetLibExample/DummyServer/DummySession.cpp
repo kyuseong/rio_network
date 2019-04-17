@@ -4,7 +4,7 @@
 #include "DummyServer.h"
 #include "../Packet/Packet.h"
 
-DummySession::DummySession(Network &Net, unsigned short ID) : Session(Net, ID, 1024 * 64, 1024 * 64)
+DummySession::DummySession()
 {
 }
 
@@ -12,14 +12,16 @@ DummySession::~DummySession()
 {
 }
 
-void DummySession::OnAccept(const wchar_t*, const int)
+void DummySession::OnAccept(iSessionProxy* Proxy, const wchar_t*, const int)
 {
+	m_Proxy = Proxy;
+
 	m_PingReceivedTime = GetTickCount64();
 
 	DummyServer::GetInstance()->AddNet(this);
 }
 
-void DummySession::OnClose()
+void DummySession::OnClose(iSessionProxy* Proxy)
 {
 	SetLastSequence(0);
 	
@@ -28,7 +30,7 @@ void DummySession::OnClose()
 	m_PingReceivedTime = 0;
 }
 
-void DummySession::OnDispatch(char * Data, unsigned int )
+void DummySession::OnDispatch(iSessionProxy* Proxy, char * Data, unsigned int )
 {
 	Packet* p = (Packet*)Data;
 
@@ -52,7 +54,7 @@ void DummySession::ChatMsg(char * Data)
 	SendPacket.m_No = pRecvPacket->m_No;
 	memcpy(SendPacket.m_Msg, pRecvPacket->m_Msg, sizeof SendPacket.m_Msg);
 
-	PostSend(&SendPacket, SendPacket.Size);
+	m_Proxy->PostSend(&SendPacket, SendPacket.Size);
 
 	g_Count++;
 
@@ -62,7 +64,7 @@ void DummySession::ChatMsg(char * Data)
 
 void DummySession::Check()
 {
-	if (IsConnected() == false)
+	if (m_Proxy->IsConnected() == false)
 		return;
 	auto Current = GetTickCount64();
 	Assert(Current - m_PingReceivedTime < 1000);

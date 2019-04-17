@@ -7,7 +7,7 @@
 
 using namespace std;
 
-DummySession::DummySession(Network &net, unsigned short ID) : Session(net, ID)
+DummySession::DummySession()
 {
 	m_Connect = true;
 	m_Mode = 0;
@@ -25,25 +25,25 @@ DummySession::~DummySession()
 
 }
 
-void DummySession::OnConnect(const wchar_t* , const int )
+void DummySession::OnConnect(iSessionProxy* Proxy, const wchar_t* , const int )
 {
+	m_Proxy = Proxy;
 	ask_chat_msg SendPacket;
 	SendPacket.m_No = ++m_No;
 	strcpy_s(SendPacket.m_Msg, std::size(SendPacket.m_Msg), "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
-	PostSend(reinterpret_cast<char *>(&SendPacket), SendPacket.Size);
-	wprintf(L"OnConnect [IP : %s, Port : %d, SID : %d]\r\n", this->GetPeerIP(), GetPeerPort(), GetSessionID());
+	m_Proxy->PostSend(reinterpret_cast<char *>(&SendPacket), SendPacket.Size);
+	wprintf(L"OnConnect [IP : %s, Port : %d, SID : %d]\r\n", m_Proxy->GetPeerIP(), m_Proxy->GetPeerPort(), m_Proxy->GetSessionID());
 
 	m_Seq = 0;
 }
 
-void DummySession::OnClose()
+void DummySession::OnClose(iSessionProxy* Proxy)
 {
-	wprintf(L"OnClose [IP : %s, Port : %d, SID : %d]\r\n", this->GetPeerIP(), GetPeerPort(), GetSessionID());
-
+	wprintf(L"OnClose [IP : %s, Port : %d, SID : %d]\r\n", m_Proxy->GetPeerIP(), m_Proxy->GetPeerPort(), m_Proxy->GetSessionID());
 	m_Connect = false;
 }
 
-void DummySession::OnDispatch(char *Data, unsigned int )
+void DummySession::OnDispatch(iSessionProxy* Proxy, char *Data, unsigned int )
 {
 	Packet* p = (Packet*)Data;
 
@@ -62,7 +62,7 @@ void DummySession::ResChatMsg(char * pData)
 	ask_chat_msg SendPacket;
 	SendPacket.m_No = ++m_No;
 	strcpy_s(SendPacket.m_Msg, std::size(SendPacket.m_Msg ), "01234567890123456789012345678901234567890123456789012345678901234567890123456789");
-	PostSend(reinterpret_cast<char *>(&SendPacket), SendPacket.Size);
+	m_Proxy->PostSend(reinterpret_cast<char *>(&SendPacket), SendPacket.Size);
 }
 
 void DummySession::ResChatMsg1(char * pData)
@@ -84,9 +84,9 @@ DummyClient::DummyClient()
 {
 	m_NetworkClient = CreateNetwork( L"DummyClient", 1000, 1, 1);
 
-	m_NetworkClient->Start([](Network& Net, unsigned short SID)
+	m_NetworkClient->Start([]()
 	{
-		return new DummySession(Net, SID);
+		return new DummySession();
 	});
 }
 
@@ -99,13 +99,13 @@ bool DummyClient::Connect(const wchar_t* Address, const int Port)
 {
 	for (int i = 0;i < 500;i++)
 	{
-		auto DummySession = m_NetworkClient->ConnectSession(Address, Port);
-		if (nullptr == DummySession)
+		auto DS = (DummySession*)m_NetworkClient->ConnectSession(Address, Port);
+		if (nullptr == DS)
 		{
 			wprintf(L"Connect Fail [IP : %s, Port : %d]\r\n", Address, Port);
 			return false;
 		}
-		m_ClientList.push_back(DummySession);
+		m_ClientList.insert( std::make_pair(DS->GetSessionID(), DS) );
 	}
 	return true;
 }
@@ -114,7 +114,7 @@ bool DummyClient::Close()
 {
 	for (auto& Client : m_ClientList)
 	{
-		Client->Disconnect(DISCONNECT_REASON_HOST_CLOSED, __WFILE__, __LINE__);
+		m_NetworkClient->DisconnectSession(Client.second->GetSessionID());
 	}
 	return true;
 }
@@ -123,7 +123,7 @@ void DummyClient::Shutdown()
 {
 	for (auto& Client : m_ClientList)
 	{
-		Client->Disconnect(DISCONNECT_REASON_SHUTDOWN_CLOSE, __FILEW__, __LINE__);
+		m_NetworkClient->DisconnectSession(Client.second->GetSessionID());
 	}
 }
 

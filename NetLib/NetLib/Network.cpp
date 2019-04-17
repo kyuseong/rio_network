@@ -608,8 +608,11 @@ void Network::CreateSessionPool(CreateClientSessionFunc CreateFunction)
 	for (unsigned short i = 0; i < m_MaxSessionCount; ++i)
 	{
 		try {
-			Session* Session = CreateFunction(*this, i);
-			PushFreeSocket(Session);
+			iSessionStub* iSess = CreateFunction();
+
+			Session* Sess= new Session(*this, i, iSess);
+
+			PushFreeSocket(Sess);
 		}
 		catch (const std::bad_alloc &) {
 			ERRORLOG(L"Network::CreateSessionPool - new fail Error : %s\r\n", GetLastErrorMessage(::GetLastError()).c_str());
@@ -805,7 +808,7 @@ int Network::AcceptThread()
 	return 0;
 }
 
-Session * Network::ConnectSession(const wchar_t* TargetAddress, const int TargetPort)
+iSessionStub * Network::ConnectSession(const wchar_t* TargetAddress, const int TargetPort)
 {
 	SOCKET Socket = m_IOModel->CreateSocket();
 
@@ -850,7 +853,14 @@ Session * Network::ConnectSession(const wchar_t* TargetAddress, const int Target
 	Session->OnConnect(TargetAddress, TargetPort);
 	Session->PostRecv();
 
-	return Session;
+	return Session->GetiSession();
+}
+
+
+void Network::DisconnectSession(int SessionID)
+{
+	auto Sess = GetSession(SessionID);
+	DisconnectSession(Sess);
 }
 
 iNetwork* CreateNetwork(const wchar_t* NetworkName, size_t MaxSessionCount, size_t WorkerThreadCount, size_t ProcessThreadCount, ePROCESS_MODE eParse)

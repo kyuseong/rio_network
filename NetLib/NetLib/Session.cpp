@@ -182,13 +182,15 @@ public:
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Session::Session(Network &Net, unsigned short SessionID, const unsigned int SendBufSize /*= SEND_SIZE*/, const unsigned int RecvBufSize /*= RECV_SIZE*/)
+Session::Session(Network &Net, unsigned short SessionID, iSessionStub* iS, const unsigned int SendBufSize /*= SEND_SIZE*/, const unsigned int RecvBufSize /*= RECV_SIZE*/)
 	: m_Network(Net)
 	, m_Socket(INVALID_SOCKET)
 	, m_ID(SessionID)
 	, m_RefCount(0)
 	
 {
+	m_iSession = iS;
+
 	m_RecvBuffer = new RingBuffer(SocketUtils::GetBestIOBufferSize(MAX_PACKET_SIZE));
 	m_SendBuffer = new RingBuffer(SocketUtils::GetBestIOBufferSize(SendBufSize));
 	m_RecvIOBuffer = new Buffer(SocketUtils::GetBestIOBufferSize(RecvBufSize));

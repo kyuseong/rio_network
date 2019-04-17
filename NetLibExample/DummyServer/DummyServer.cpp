@@ -6,15 +6,13 @@
 
 #include <iostream>
 
-DummyServer::DummyServer() 
+DummyServer::DummyServer()
 {
 	m_MaxNo = 0;
-		
+
 	m_Network = CreateNetwork(L"DummyServer", 10000, 2, 2);
-	
-	m_Network->Start([](auto& Net, auto ID){
-		return new DummySession(Net, ID);
-	});
+
+	m_Network->Start([] () { return new DummySession();});
 }
 
 DummyServer::~DummyServer()
@@ -86,10 +84,9 @@ void DummyServer::Check()
 	}
 }
 
-
-void DummyServer::DisconnectNet(DummySession * pNet)
+void DummyServer::DisconnectNet(DummySession * Session)
 {
-	m_Network->DisconnectSession(pNet);
+	m_Network->DisconnectSession(Session->GetSessionID());
 }
 
 DummySession * DummyServer::GetPlayerNet(const long long no)

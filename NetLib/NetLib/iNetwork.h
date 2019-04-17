@@ -1,14 +1,5 @@
 #pragma once 
 
-#include "TypesCommon.h"
-
-#include "Allocator.h"
-#include "Network.h"
-#include "Mutex.h"
-#include "AssertEx.h"
-#include "Output.h"
-
-
 // 패킷 처리 스레드 결정하기
 enum ePROCESS_MODE : DWORD
 {
@@ -16,7 +7,38 @@ enum ePROCESS_MODE : DWORD
 	PROCESS_MODE_OWN		// 패킷 처리를 내 proc 스레드로 이용 할께염
 };
 
-using CreateClientSessionFunc = std::function<Session* (Network&, unsigned short)>;
+class iSessionProxy
+{
+public:
+	virtual bool IsConnected() const = 0;
+	// Send을 요청한다.
+	virtual bool PostSend(void* Data, unsigned int Len) = 0;
+	// 버퍼에 채움
+	virtual bool PostSendBuffered(void* Data, unsigned int Len) = 0;
+	// Send버퍼를 Flush 시킨다.
+	virtual bool PostSend() = 0;
+
+	virtual int GetSessionID() const = 0;
+	// 원격 클라이언트의 접속 ip 구하기
+	virtual const wchar_t*	GetPeerIP() const = 0;
+	// 원격 클라이언트의 접속 포트 구하기
+	virtual const unsigned short GetPeerPort() const = 0;
+	// 접속 할 서버의 IP (클라이언트인 경우)
+	virtual const wchar_t* GetTargetIP() const = 0;
+	// 접속 할 서버의 PORT (클라이언트인 경우)
+	virtual const unsigned short GetTargetPort() const = 0;
+};
+
+class iSessionStub
+{
+public:
+	virtual void OnAccept(iSessionProxy* Proxy, const wchar_t* TargetAddress, const int TargetPort) = 0;
+	virtual void OnConnect(iSessionProxy* Proxy, const wchar_t* TargetAddress, const int TargetPort) = 0;
+	virtual void OnClose(iSessionProxy* Proxy) = 0;
+	virtual void OnDispatch(iSessionProxy* Proxy, char * Data, unsigned int Len) = 0;
+};
+
+using CreateClientSessionFunc = std::function<iSessionStub* ()>;
 
 class iNetwork
 {
@@ -34,9 +56,9 @@ public:
 
 	// 서버에 접속한다.
 	// - blocking 
-	virtual Session * ConnectSession(const wchar_t* TargetAddress, const int TargetPort) = 0;
+	virtual iSessionStub * ConnectSession(const wchar_t* TargetAddress, const int TargetPort) = 0;
 	// 클라이언트의 소켓 접속을 강제로 끊는다.
-	virtual void DisconnectSession(Session * Session) = 0;
+	virtual void DisconnectSession(int SessionID) = 0;
 
 	//-------------------------------------------------------------------------
 	// MISC
@@ -50,13 +72,5 @@ public:
 	virtual bool IsConnected(unsigned short Index) = 0;
 };
 
-class iNetworkDelegate
-{
-public:
-	virtual void OnAccept(const wchar_t* TargetAddress, const int TargetPort) = 0;
-	virtual void OnConnect(const wchar_t* TargetAddress, const int TargetPort) = 0;
-	virtual void OnClose() = 0;
-	virtual void OnDispatch(char * Data, unsigned int Len) = 0;
-};
 
 iNetwork* CreateNetwork(const wchar_t* NetworkName = L"", size_t MaxSessionCount = 100, size_t WorkerThreadCount = 1, size_t ProcessThreadCount = 1, ePROCESS_MODE eParse = PROCESS_MODE_OWN);

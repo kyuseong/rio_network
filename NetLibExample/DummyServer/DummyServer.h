@@ -6,7 +6,6 @@ class DummyServer
 {
 private:
 	using NetMap = std::map<long long, DummySession *>;
-	iNetworkDelegate* m_NetworkDelegate;
 	iNetwork *m_Network;		///	소켓 서버
 	std::mutex			m_Lock;				///	동기화를 위한 락
 	NetMap				m_mapNet;			///	넷 맵
