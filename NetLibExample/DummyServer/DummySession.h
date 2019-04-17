@@ -27,13 +27,13 @@ public:
 	void Check();
 
 	long long GetNo() {
-		Assert(m_No != 0);
+		NET_ASSERT(m_No != 0);
 		return m_No;
 	}
 	void SetNo(long long No)
 	{
 		m_No = No;
-		Assert(m_No != 0);
+		NET_ASSERT(m_No != 0);
 	}
 
 	int GetSessionID() const

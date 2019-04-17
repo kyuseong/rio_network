@@ -1,12 +1,5 @@
 #pragma once
 
-#include <mutex>
-#include <vector>
-#include <unordered_map>
-#include <map>
-#include <set>
-#include <queue>
-
 #include "Mutex.h"
 
 template <class TYPE>

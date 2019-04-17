@@ -46,7 +46,7 @@ public:
 			m_CQ[i] = RIO.RIOCreateCompletionQueue((DWORD)MAX_CQ_SIZE, 0);
 			if (m_CQ[i] == RIO_INVALID_CQ)
 			{
-				Assert(false);
+				NET_ASSERT(false);
 				return;
 			}
 		}
@@ -61,7 +61,7 @@ public:
 
 	virtual void* GetHandle(unsigned int ThreadId) const override
 	{
-		Assert(ThreadId < THREAD_ID_COUNT);
+		NET_ASSERT(ThreadId < THREAD_ID_COUNT);
 
 		return m_CQ[ThreadId];
 	}

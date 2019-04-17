@@ -67,5 +67,5 @@ void DummySession::Check()
 	if (m_Proxy->IsConnected() == false)
 		return;
 	auto Current = GetTickCount64();
-	Assert(Current - m_PingReceivedTime < 1000);
+	NET_ASSERT(Current - m_PingReceivedTime < 1000);
 }

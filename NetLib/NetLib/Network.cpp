@@ -448,14 +448,14 @@ void Network::DisconnectSession(Session * Session)
 void Network::AddClosingSession(Session * Session, const wchar_t * SrcFile, const unsigned int SrcLine)
 {
 	if (!Session) {
-		Assert(Session != nullptr);
+		NET_ASSERT(Session != nullptr);
 		return;
 	}
 
 	{
 		std::unique_lock lock(m_ClosingSessionListLock);
 
-		Assert(m_ClosingSessionList.end() == std::find(m_ClosingSessionList.begin(), m_ClosingSessionList.end(), Session));
+		NET_ASSERT(m_ClosingSessionList.end() == std::find(m_ClosingSessionList.begin(), m_ClosingSessionList.end(), Session));
 
 		m_ClosingSessionList.emplace_back(Session);
 	}
@@ -505,7 +505,7 @@ int Network::ProcessWorkerThreadEntry()
 				ERRORLOG(L"ProcessCompletion error");
 			}
 		default:
-			Assert(false);
+			NET_ASSERT(false);
 			ERRORLOG(L"ProcessWorkerThreadEntry error");
 			break;
 		}
@@ -575,14 +575,14 @@ Session* Network::AllocateSession(SOCKET hSocket)
 void Network::ReleaseSession(Session * Session, const wchar_t * SrcFile, const unsigned int SrcLine)
 {
 	if (!Session) {
-		Assert(Session != nullptr);
+		NET_ASSERT(Session != nullptr);
 		return;
 	}
 
 	Session->Close(SrcFile, SrcLine);
 
 	std::lock_guard lock(m_SessionListLock);
-	Assert(m_ActiveSessionList[Session->GetSessionID()] == Session);
+	NET_ASSERT(m_ActiveSessionList[Session->GetSessionID()] == Session);
 	if (m_ActiveSessionList[Session->GetSessionID()] != Session)
 		return;
 

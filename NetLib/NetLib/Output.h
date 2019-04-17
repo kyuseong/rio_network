@@ -1,5 +1,10 @@
 #pragma once
 
+
+#include <assert.h>
+
+#define NET_ASSERT assert
+
 void Output(const wchar_t * file, const unsigned int line, const wchar_t * pszFormat, ...);
 void Output(const wchar_t * pszFormat, ...);
 

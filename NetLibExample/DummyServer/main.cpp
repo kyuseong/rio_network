@@ -6,25 +6,6 @@
 #include "DummySession.h"
 #include "DummyServer.h"
 
-
-class AAA
-{
-public:
-	/// \brief 메모리 할당
-	void* operator new (size_t size)
-	{
-		printf("new AAA\n");
-		return malloc(size);
-	}
-
-	/// \brief 메모리 해제
-	void operator delete (void* ptr)
-	{
-		free(ptr);
-		printf("delete AAA\n");
-	}
-};
-
 extern std::atomic<int> g_Count;
 
 int main(int argc, char** argv)

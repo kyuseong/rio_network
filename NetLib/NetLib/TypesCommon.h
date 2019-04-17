@@ -20,6 +20,9 @@
 #include <vector>
 #include <memory>
 
+#include <map>
+#include <set>
+
 #pragma warning(pop)
 
 #include <assert.h>

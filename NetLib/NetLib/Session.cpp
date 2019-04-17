@@ -253,7 +253,7 @@ void Session::Attach(SOCKET hSocket)
 
 	if (m_IOModel->Attach() == false)
 	{
-		Assert(false);
+		NET_ASSERT(false);
 		return;
 	}
 
@@ -350,7 +350,7 @@ void Session::AddRef(int index, const wchar_t * SrcFile, const unsigned int SrcL
 	long Count = InterlockedIncrement(&m_RefCount);
 	UNREFERENCED_PARAMETER(Count);
 #ifdef DEBUG_NETWORK
-	Assert(index < 10);
+	NET_ASSERT(index < 10);
 	InterlockedIncrement(&m_RefAddCount[index]);
 	if (IsConnected() == false)
 	{
@@ -362,7 +362,7 @@ void Session::AddRef(int index, const wchar_t * SrcFile, const unsigned int SrcL
 void Session::ReleaseRef(int index, const wchar_t * SrcFile, const unsigned int SrcLine)
 {
 #ifdef DEBUG_NETWORK
-	Assert(index < 10);
+	NET_ASSERT(index < 10);
 	InterlockedIncrement(&m_RefReleaseCount[index]);
 #endif
 	int RefCount = InterlockedDecrement(&m_RefCount);
@@ -382,7 +382,7 @@ void Session::ReleaseRef(int index, const wchar_t * SrcFile, const unsigned int 
 		ERRORLOG(L"%s(%d) : ReleaseRef - sid:%d, count:%d", SrcFile, SrcLine, GetSessionID(), RefCount);
 	}
 #endif
-	Assert(RefCount >= 0);
+	NET_ASSERT(RefCount >= 0);
 }
 
 void Session::Close(const wchar_t * SrcFile, const unsigned int SrcLine)
@@ -394,9 +394,9 @@ void Session::Close(const wchar_t * SrcFile, const unsigned int SrcLine)
 	std::lock_guard Lock(m_ClientSessionLock);
 
 	// 0이어야 한다.
-	Assert(m_RefCount == 0);
-	Assert(m_Socket == INVALID_SOCKET);
-	Assert(m_Connect == false);
+	NET_ASSERT(m_RefCount == 0);
+	NET_ASSERT(m_Socket == INVALID_SOCKET);
+	NET_ASSERT(m_Connect == false);
 
 	{
 		std::lock_guard RecvLock(m_RecvPacketLock);
