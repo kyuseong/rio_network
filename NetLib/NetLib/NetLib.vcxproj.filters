@@ -9,9 +9,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Buffer.h">
-      <Filter>Network</Filter>
-    </ClInclude>
     <ClInclude Include="Network.h">
       <Filter>Network</Filter>
     </ClInclude>
@@ -19,16 +16,7 @@
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="NetLibPCH.h" />
-    <ClInclude Include="Output.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
-    <ClInclude Include="AssertEx.h">
-      <Filter>Misc</Filter>
-    </ClInclude>
     <ClInclude Include="NetLib.h" />
-    <ClInclude Include="RIOBuffer.h">
-      <Filter>Network</Filter>
-    </ClInclude>
     <ClInclude Include="Session.h">
       <Filter>Network</Filter>
     </ClInclude>
@@ -39,16 +27,22 @@
     <ClInclude Include="IOCompletionQueue.h">
       <Filter>Network</Filter>
     </ClInclude>
-    <ClInclude Include="RingBuffer.h">
-      <Filter>Network</Filter>
-    </ClInclude>
     <ClInclude Include="Mutex.h">
       <Filter>Misc</Filter>
     </ClInclude>
-    <ClInclude Include="TypesCommon.h">
+    <ClInclude Include="Allocator.h">
       <Filter>Misc</Filter>
     </ClInclude>
-    <ClInclude Include="Allocator.h">
+    <ClInclude Include="IOBuffer.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="Buffer.h">
+      <Filter>Network</Filter>
+    </ClInclude>
+    <ClInclude Include="External.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Log.h">
       <Filter>Misc</Filter>
     </ClInclude>
   </ItemGroup>
@@ -57,9 +51,6 @@
       <Filter>Network</Filter>
     </ClCompile>
     <ClCompile Include="NetLibPCH.cpp" />
-    <ClCompile Include="Output.cpp">
-      <Filter>Misc</Filter>
-    </ClCompile>
     <ClCompile Include="Session.cpp">
       <Filter>Network</Filter>
     </ClCompile>
@@ -68,6 +59,9 @@
     </ClCompile>
     <ClCompile Include="IOCompletionQueue.cpp">
       <Filter>Network</Filter>
+    </ClCompile>
+    <ClCompile Include="Log.cpp">
+      <Filter>Misc</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

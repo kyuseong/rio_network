@@ -1,11 +1,11 @@
-ï»¿#pragma once
+#pragma once
 
-// ê± ë²„í¼
+// °Á ¹öÆÛ
 class Buffer final
 {
 protected:
-	char	*m_Buffer;		// ë²„í¼
-	int		m_BufSize;		// ë²„í¼ ì‚¬ì´ì¦ˆ
+	char	*m_Buffer;		// ¹öÆÛ
+	int		m_BufSize;		// ¹öÆÛ »çÀÌÁî
 
 public:
 	Buffer(int Size = 4096)
@@ -18,7 +18,211 @@ public:
 	{
 		VirtualFreeEx(GetCurrentProcess(), m_Buffer, 0, MEM_RELEASE);
 	}
-		
+
 	char*	GetBuffPtr() const { return m_Buffer; }
 	int		GetBuffSize() const { return m_BufSize; }
 };
+
+
+// ¸µ ÆÛ¹ö
+// 
+// head tailÀº ºñ¾î ÀÖÀ»¶§¸¸ °ãÄ¡°í 
+// fullÀÏ¶§ head ¿Í tailÀÌ °ãÄ¡Áö ¾ÊÀ½
+// °íÁ¤ ±æÀÌ ¹öÆÛ¸¦ °¡Áø ¸µ¹öÆÛ
+// |-------====================------|
+//        |                   |
+//       Head                Tail     
+
+class RingBuffer final
+{
+private:
+	char*	m_pBuffer;		// ÇÒ´çµÈ ¹öÆÛ
+	int		m_iBufSize;		// ½ÇÁ¦ ÇÒ´çµÈ ¹öÇÁ »çÀÌÁî
+
+	int		m_iHeadPos;		// ÀĞÀ»¼ö ÀÖ´Â Æ÷Áö¼Ç
+	int		m_iTailPos;		// ¾´ Æ÷Áö¼Ç
+
+public:
+	RingBuffer(int iSize = 4096);
+	~RingBuffer();
+
+	// ¸®¼Â
+	void	Clear() { m_iHeadPos = 0; m_iTailPos = 0; }
+	// µ¥ÀÌÅÍ¸¦ ³Ö´Â´Ù.
+	bool	PutData(char *Data, int iLen);
+	// µ¥ÀÌÅÍ¸¦ ³ÖÁö¾Ê°í ÇÒ´ç¸¸ ÇØÁØ´Ù.
+	bool	PutEmptyData(int iLen);
+	// µ¥ÀÌÅÍ¸¦ ²¨³½´Ù.
+	bool	GetData(char *Data, int iLen);
+	// µ¥ÀÌÅÍ¸¦ Áö¿î´Ù.
+	bool	PopData(int Len);
+	// µé¾î ÀÖ´Â µ¥ÀÌÅÍ
+	int		GetDataLength() const;
+	// ³ÖÀ»¼ö ÀÖ´Â »çÀÌÁî
+	int		GetCapacitySize() const { return GetBuffSize() - GetDataLength() - 1; }
+	// ¹öÆÛ Æ÷ÀÎÆ®
+	char*	GetBuffPtr() const { return m_pBuffer; }
+	// ¹öÆÛ »çÀÌÁî
+	int		GetBuffSize() const { return m_iBufSize; }
+	// µ¥ÀÌÆ® ¹öÆÛ
+	char*	GetDataPtr()	const { return m_pBuffer + m_iHeadPos; }
+	// ²¿¸® À§Ä¡
+	int		GetTailPos() const { return m_iTailPos; }
+	// ²ËÃ¡¾î?
+	bool	IsFull() const { return GetDataLength() == GetBuffSize() - 1; }
+	// µ¥ÀÌÅÍ¸¦ ³ÖÀ»¼ö ÀÖ³Ä?
+	bool	CanPutData(const int Len) const { return (Len < m_iBufSize - GetDataLength()); }
+	// ºĞ¸®µÇ¾î ÀÖ³Ä? 
+	//  Second                     First
+	// |=======--------------------======|
+	//        |                    |
+	//       Tail                Head     
+	bool	CheckSplit(const int Len) const { return (Len + m_iTailPos >= m_iBufSize); }
+	bool	IsSplit() const { return m_iHeadPos > m_iTailPos; }
+	// ºĞ¸®µÈ Ã¹¹øÂ° µ¥ÀÌÅÍ Æ÷ÀÎÆ®¸¦ ±¸ÇÑ´Ù.
+	// BeforeIndex ¸¸Å­ ÀÌÀü µ¥ÀÌÅÍÀÇ µ¥ÀÌÅÍ Æ÷ÀÎÆ®¸¦ ±¸ÇÑ´Ù.
+	char*	GetFirstDataPtr(int BeforePos) const {
+		if (BeforePos > m_iTailPos) {
+			BeforePos -= m_iTailPos;
+			return m_pBuffer + m_iBufSize - BeforePos;
+		}
+		return m_pBuffer + m_iTailPos - BeforePos;
+	}
+	// ºĞ¸®µÈ µÎ¹øÂ° µ¥ÀÌÅÍ Æ÷ÀÎÆ®¸¦ ±¸ÇÑ´Ù.
+	// BeforeIndex ¸¸Å­ ÀÌÀü µ¥ÀÌÅÍÀÇ µ¥ÀÌÅÍ Æ÷ÀÎÆ®¸¦ ±¸ÇÑ´Ù.
+	char*	GetSecondDataPtr(int BeforePos) const { return BeforePos > m_iTailPos ? m_pBuffer : nullptr; }
+
+	// ºĞ¸® µÇ¾úÀ» °æ¿ì Ã¹¹øÂ° µ¥ÀÌÅÍ
+	char* GetFirstData() { return m_pBuffer + m_iHeadPos; }
+	int GetFirstDataOffset() { return m_iHeadPos; }
+	// ºĞ¸® µÇ¾úÀ» °æ¿ì Ã¹¹øÂ° µ¥ÀÌÅÍ ±æÀÌ
+	int GetFirstDataLen() const { return IsSplit() ? m_iBufSize - m_iHeadPos : m_iTailPos - m_iHeadPos; }
+	// ºĞ¸® µÇ¾úÀ» °æ¿ì µÎ¹øÂ° µ¥ÀÌÅÍ
+	char* GetSecondData() { return IsSplit() ? m_pBuffer : nullptr; }
+	// ºĞ¸® µÇ¾úÀ» °æ¿ì µÎ¹øÂ° µ¥ÀÌÅÍ
+	int GetSecondDataLen() const { return IsSplit() ? m_iTailPos : 0; }
+
+private:
+	void GlowBuffer();
+
+};
+
+
+inline
+RingBuffer::RingBuffer(int iSize) : m_iBufSize(iSize), m_iHeadPos(0), m_iTailPos(0)
+{
+	m_pBuffer = reinterpret_cast<char*>(VirtualAllocEx(GetCurrentProcess(), 0, m_iBufSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE));
+}
+
+inline
+RingBuffer::~RingBuffer()
+{
+	VirtualFreeEx(GetCurrentProcess(), m_pBuffer, 0, MEM_RELEASE);
+
+}
+
+inline
+int RingBuffer::GetDataLength() const
+{
+	int iLen = m_iTailPos - m_iHeadPos;
+	if (iLen < 0) iLen = m_iBufSize + iLen;
+	return iLen;
+}
+
+inline
+void RingBuffer::GlowBuffer()
+{
+	int iPreBufSize = m_iBufSize;
+	m_iBufSize <<= 1;
+
+	char* pNewData = new char[m_iBufSize];
+	memcpy(pNewData, m_pBuffer, iPreBufSize);
+	if (m_iTailPos < m_iHeadPos) {
+		memcpy(pNewData + iPreBufSize, m_pBuffer, m_iTailPos);
+		m_iTailPos += iPreBufSize;
+	}
+	delete[] m_pBuffer;
+	m_pBuffer = pNewData;
+}
+
+inline
+bool	RingBuffer::PutEmptyData(int iLen)
+{
+	if (iLen < 0)
+		return false;
+	if (CanPutData(iLen) == false)
+		return false;
+	if (CheckSplit(iLen)) {
+		int iFirstLen = m_iBufSize - m_iTailPos;
+		int iSecondLen = iLen - iFirstLen;
+
+		if (iSecondLen) {
+			m_iTailPos = iSecondLen;
+		}
+		else
+			m_iTailPos = 0;
+	}
+	else {
+		m_iTailPos += iLen;
+	}
+	return true;
+}
+
+inline
+bool RingBuffer::PutData(char * Data, int iLen)
+{
+	if (iLen < 0)
+		return false;
+	if (CanPutData(iLen) == false)
+		return false;
+	if (CheckSplit(iLen)) {
+		int iFirstLen = m_iBufSize - m_iTailPos;
+		int iSecondLen = iLen - iFirstLen;
+
+		memcpy(m_pBuffer + m_iTailPos, Data, iFirstLen);
+		if (iSecondLen) {
+			memcpy(m_pBuffer, Data + iFirstLen, iSecondLen);
+			m_iTailPos = iSecondLen;
+		}
+		else
+			m_iTailPos = 0;
+	}
+	else {
+		memcpy(m_pBuffer + m_iTailPos, Data, iLen);
+		m_iTailPos += iLen;
+	}
+	return true;
+}
+
+
+inline
+bool RingBuffer::GetData(char * Data, int Len)
+{
+	if (Len > GetDataLength())
+		return false;
+
+	if (Len < m_iBufSize - m_iHeadPos) {
+		memcpy(Data, m_pBuffer + m_iHeadPos, Len);
+	}
+	else {
+		int iFirstLen, iSecondLen;
+		iFirstLen = m_iBufSize - m_iHeadPos;
+		iSecondLen = Len - iFirstLen;
+
+		memcpy(Data, m_pBuffer + m_iHeadPos, iFirstLen);
+		if (iSecondLen) {
+			memcpy(Data + iFirstLen, m_pBuffer, iSecondLen);
+		}
+	}
+
+	return true;
+}
+
+inline
+bool RingBuffer::PopData(int Len)
+{
+	m_iHeadPos += Len;
+	m_iHeadPos %= m_iBufSize;
+	return m_iHeadPos != m_iTailPos;
+}
+

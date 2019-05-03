@@ -407,21 +407,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Allocator.h" />
-    <ClInclude Include="AssertEx.h" />
-    <ClInclude Include="Buffer.h" />
     <ClInclude Include="Mutex.h" />
-    <ClInclude Include="RingBuffer.h" />
+    <ClInclude Include="Buffer.h" />
     <ClInclude Include="iNetwork.h" />
     <ClInclude Include="Session.h" />
-    <ClInclude Include="RIOBuffer.h" />
+    <ClInclude Include="IOBuffer.h" />
     <ClInclude Include="NetLib.h" />
     <ClInclude Include="NetLibPCH.h" />
     <ClInclude Include="Network.h" />
     <ClInclude Include="IOCompletionQueue.h" />
-    <ClInclude Include="Output.h" />
+    <ClInclude Include="Log.h" />
     <ClInclude Include="SocketConfig.h" />
     <ClInclude Include="SocketUtils.h" />
-    <ClInclude Include="TypesCommon.h" />
+    <ClInclude Include="External.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Session.cpp" />
@@ -434,7 +432,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Network.cpp" />
-    <ClCompile Include="Output.cpp" />
+    <ClCompile Include="Log.cpp" />
     <ClCompile Include="SocketUtils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,10 +1,10 @@
 #pragma once 
 
-#include "TypesCommon.h"
+#include "External.h"
 
 #include "Allocator.h"
 #include "Mutex.h"
-#include "AssertEx.h"
-#include "Output.h"
+#include "Log.h" 
+
 
 #include "iNetwork.h"

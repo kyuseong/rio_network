@@ -2,8 +2,8 @@
 #include "Network.h"
 #include "Session.h"
 #include "SocketUtils.h"
-#include "RingBuffer.h"
-#include "RIOBuffer.h"
+#include "Buffer.h"
+#include "IOBuffer.h"
 #include "Buffer.h"
 
 // ¼¼¼ÇÀÇ IO ¸ðµ¨ 

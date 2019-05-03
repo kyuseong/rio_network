@@ -16,6 +16,5 @@
 #include <WinSock2.h>
 #include <MSWSock.h>
 
-#include "AssertEx.h"
-#include "Output.h"
+#include "Log.h"
 #include "Mutex.h"

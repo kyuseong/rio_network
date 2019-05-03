@@ -1,6 +1,6 @@
 #include "NetLibPCH.h"
 #include "IOCompletionQueue.h"
-#include "Output.h" 
+#include "Log.h" 
 
 IOCompletionPort::IOCompletionPort(size_t maxConcurrency)
 {

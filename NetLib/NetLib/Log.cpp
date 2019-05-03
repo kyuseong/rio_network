@@ -1,5 +1,6 @@
 #include "NetLibPCH.h"
-#include "Output.h"
+#include "Log.h" 
+
 #include <stdio.h>
 
 void Output(const wchar_t * file, const unsigned int line, const wchar_t * pszFormat, ...)

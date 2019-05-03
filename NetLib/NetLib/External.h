@@ -12,18 +12,14 @@
 
 #endif
 
-#pragma warning(push)
 #include <algorithm>
 #include <iostream>
 #include <queue>
 #include <string>
 #include <vector>
 #include <memory>
-
 #include <map>
 #include <set>
-
-#pragma warning(pop)
 
 #include <assert.h>
 #include <string.h>
