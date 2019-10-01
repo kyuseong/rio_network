@@ -4,10 +4,10 @@
 
 enum IOType
 {
-	IO_NONE,
-	IO_SEND,
-	IO_RECV,
-	IO_PROCESS
+	IOTYPE_NONE,
+	IOTYPE_SEND,
+	IOTYPE_RECV,
+	IOTYPE_PROCESS
 };
 
 class Session;

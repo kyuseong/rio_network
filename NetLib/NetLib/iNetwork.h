@@ -7,6 +7,7 @@ enum ePROCESS_MODE : DWORD
 	PROCESS_MODE_OWN		// 패킷 처리를 내 proc 스레드로 이용 할께염
 };
 
+// 세션 대리
 class iSessionProxy
 {
 public:
@@ -17,7 +18,9 @@ public:
 	virtual bool PostSendBuffered(void* Data, unsigned int Len) = 0;
 	// Send버퍼를 Flush 시킨다.
 	virtual bool PostSend() = 0;
-
+	// 패킷 처리
+	virtual int ProcessPacket() = 0;
+	// SessionID 구하기
 	virtual int GetSessionID() const = 0;
 	// 원격 클라이언트의 접속 ip 구하기
 	virtual const wchar_t*	GetPeerIP() const = 0;
@@ -29,12 +32,17 @@ public:
 	virtual const unsigned short GetTargetPort() const = 0;
 };
 
+// 세션 stub
 class iSessionStub
 {
 public:
+	// Accept 되었음
 	virtual void OnAccept(iSessionProxy* Proxy, const wchar_t* TargetAddress, const int TargetPort) = 0;
+	// Connect 되었음
 	virtual void OnConnect(iSessionProxy* Proxy, const wchar_t* TargetAddress, const int TargetPort) = 0;
+	// 종료 되었음
 	virtual void OnClose(iSessionProxy* Proxy) = 0;
+	// dispatch 되었음
 	virtual void OnDispatch(iSessionProxy* Proxy, char * Data, unsigned int Len) = 0;
 };
 

@@ -32,8 +32,8 @@ class SessionIOModel_IOCP : public SessionIOModel
 public:
 	SessionIOModel_IOCP(Session* Session) 
 		: SessionIOModel(Session),
-		m_SendBuffer(Session, IO_SEND),
-		m_RecvBuffer(Session, IO_RECV)
+		m_SendBuffer(Session, IOTYPE_SEND),
+		m_RecvBuffer(Session, IOTYPE_RECV)
 	{
 	}
 	virtual ~SessionIOModel_IOCP()
@@ -75,7 +75,7 @@ public:
 		DWORD NumBytes = 0;
 		DWORD Flags = 0;
 
-		if (SOCKET_ERROR == WSASend(m_Session->m_Socket, &WsaBuf, 1, &NumBytes, Flags, &m_SendBuffer, NULL))
+		if (SOCKET_ERROR == ::WSASend(m_Session->m_Socket, &WsaBuf, 1, &NumBytes, Flags, &m_SendBuffer, NULL))
 		{
 			int iError = ::WSAGetLastError();
 			if (iError != WSA_IO_PENDING)
@@ -89,7 +89,6 @@ public:
 };
 
 // 세션의 IO 모델 (RIO)
-
 class SessionIOModel_RIO : public SessionIOModel
 {
 	RIO_RQ			m_RequestQueue;		// RQ
@@ -113,8 +112,8 @@ public:
 			throw std::exception("RIORegisterBuffer - error");
 		}
 
-		m_RecvRIOBuffer = new RIOBuffer(m_Session, IO_RECV, m_RecvBufferId);
-		m_SendRIOBuffer = new RIOBuffer(m_Session, IO_SEND, m_SendBufferId);
+		m_RecvRIOBuffer = new RIOBuffer(m_Session, IOTYPE_RECV, m_RecvBufferId);
+		m_SendRIOBuffer = new RIOBuffer(m_Session, IOTYPE_SEND, m_SendBufferId);
 	}
 
 	virtual ~SessionIOModel_RIO()
@@ -208,7 +207,7 @@ Session::Session(Network &Net, unsigned short SessionID, iSessionStub* iS, const
 	{
 		m_IOModel = new SessionIOModel_IOCP(this);
 	}
-	m_ProcOverlapped = new OverlappedBuffer(this, IO_PROCESS);
+	m_ProcOverlapped = new OverlappedBuffer(this, IOTYPE_PROCESS);
 
 	m_PeerIP.clear();
 	m_PeerPort = 0;
@@ -323,14 +322,14 @@ void Session::Disconnect(eDISCONNECT_REASON Reason, const wchar_t * SrcFile, con
 		lingerOption.l_onoff = 1;
 		lingerOption.l_linger = 0;
 
-		if (SOCKET_ERROR == setsockopt(m_Socket, SOL_SOCKET, SO_LINGER, (char*)&lingerOption, sizeof(LINGER)))
+		if (SOCKET_ERROR == ::setsockopt(m_Socket, SOL_SOCKET, SO_LINGER, (char*)&lingerOption, sizeof(LINGER)))
 		{
 			ERRORLOG(L"Disconnect - setsockopt linger option error: %d\n", GetLastError());
 		}
 
 		ERRORLOG(L"Disconnect - sid:%d,reasion:%d", GetSessionID(), Reason);
 
-		closesocket(m_Socket);
+		::closesocket(m_Socket);
 
 
 		m_Socket = INVALID_SOCKET;
@@ -345,6 +344,7 @@ void Session::Disconnect(eDISCONNECT_REASON Reason, const wchar_t * SrcFile, con
 	ReleaseRef(1, SrcFile, SrcLine);
 }
 
+// Ref Count를 더해준다.
 void Session::AddRef(int index, const wchar_t * SrcFile, const unsigned int SrcLine)
 { 
 	long Count = InterlockedIncrement(&m_RefCount);
@@ -359,6 +359,7 @@ void Session::AddRef(int index, const wchar_t * SrcFile, const unsigned int SrcL
 #endif
 }
 
+// Ref Count를 빼준다.
 void Session::ReleaseRef(int index, const wchar_t * SrcFile, const unsigned int SrcLine)
 {
 #ifdef DEBUG_NETWORK
@@ -385,6 +386,7 @@ void Session::ReleaseRef(int index, const wchar_t * SrcFile, const unsigned int 
 	NET_ASSERT(RefCount >= 0);
 }
 
+// 접속이 종료된다.
 void Session::Close(const wchar_t * SrcFile, const unsigned int SrcLine)
 {
 	ERRORLOG(L"Session::Close - sid:%d", GetSessionID());
@@ -461,7 +463,7 @@ void Session::CompletedRecv(unsigned int Transferred)
 		std::lock_guard Lock(m_RecvPacketLock);
 
 		if (m_RecvBuffer->PutData(m_RecvIOBuffer->GetBuffPtr(), Transferred) == false) {
-			ERRORLOG(L"Socket::Recevie() - PutData Error - %u \n", GetSocket());
+			ERRORLOG(L"Socket::Recevie() - PutData Error - %u \n", GetSessionID());
 			Disconnect(DISCONNECT_REASON_RECV_PUTDATA_ERROR, __WFILE__, __LINE__);
 		}
 
@@ -478,6 +480,7 @@ void Session::CompletedRecv(unsigned int Transferred)
 #endif
 }
 
+// 언마샬링 raw
 char* Session::UnmarshallRaw(char * Data, unsigned int &Len)
 {
 	std::lock_guard Lock(m_RecvPacketLock);
@@ -485,35 +488,53 @@ char* Session::UnmarshallRaw(char * Data, unsigned int &Len)
 	return Unmarshall(Data, Len, m_RecvBuffer);
 }
 
-char* Session::Unmarshall(char * Data, unsigned int &Len, RingBuffer* RecvBuffer)
+// 패킷이 완료되었나?
+bool Session::IsCompletedPacket(unsigned int &Len, RingBuffer* RecvBuffer)
 {
 	if (0 == RecvBuffer->GetDataLength())
-		return nullptr;
-	
+		return false;
+
 	// 임의로 헤더 2바이트로
 	if (RecvBuffer->GetDataLength() < 2)
-		return nullptr;
+		return false;
 
 	// 패킷 전체 사이즈 ( header 포함 + payload )
 	unsigned short PacketSize = 0;
 	RecvBuffer->GetData((char*)&PacketSize, 2);
-	
+
 	// 패킷이 다 받아 졌는지 체크
 	if (RecvBuffer->GetDataLength() < PacketSize)
+		return false;
+
+	Len = PacketSize;
+
+	return true;
+}
+
+// 언마샬링
+char* Session::Unmarshall(char * Data, unsigned int &Len, RingBuffer* RecvBuffer)
+{
+	// 패킷 완료되었어?
+	if (IsCompletedPacket(Len, RecvBuffer) == false)
 		return nullptr;
 
 	// 패킷 최대 사이즈을 넘어가면 안됨
-	if (PacketSize >= MAX_PACKET_SIZE)
-		return false;
-
-	// 패킷 전체 사이즈 만큼 Data 에 복사(header 포함되어 있음)
-	if (RecvBuffer->GetData(Data, PacketSize) == false)
+	if (Len >= MAX_PACKET_SIZE)
 	{
-		ERRORLOG(L"Socket::PullOutCore() - GetData() - %u \n", GetSocket());
+		throw std::runtime_error("packet size exceeded maximum size.");
+		ERRORLOG(L"Session::Unmarshall() - packet size exceeded maximum size - %u, %d \n", GetSessionID(), Len);
 		return nullptr;
 	}
 
-	RecvBuffer->PopData(PacketSize);
+	// 패킷 전체 사이즈 만큼 Data 에 복사(header 포함되어 있음)
+	if (RecvBuffer->GetData(Data, Len) == false)
+	{
+		ERRORLOG(L"Session::Unmarshall() - GetData() - %u \n", GetSessionID());
+		throw std::runtime_error("There is not enough data in the buffer.");
+		return nullptr;
+	}
+
+	RecvBuffer->PopData(Len);
 
 	return Data;
 }
@@ -535,6 +556,7 @@ bool Session::Marshall(void* Data, unsigned int Len, RingBuffer* SendBuffer)
 	return true;
 }
 
+// send 처리 ( 보내기 하지 않음 / 버퍼에만 넣음 )
 bool Session::PostSendBuffered(void* Data, unsigned int Len)
 {
 	{
@@ -547,6 +569,7 @@ bool Session::PostSendBuffered(void* Data, unsigned int Len)
 	return true;
 }
 
+// send 처리 ( 버퍼에 넣고 flush 함 )
 bool Session::PostSend(void * Data, unsigned int Len)
 {
 	if (nullptr == Data)
@@ -569,6 +592,7 @@ bool Session::PostSend(void * Data, unsigned int Len)
 	return bRet;
 }
 
+// send 완료
 bool Session::CompletedSend(unsigned int Transferred)
 {
 #ifdef DEBUG_NETWORK
@@ -576,7 +600,7 @@ bool Session::CompletedSend(unsigned int Transferred)
 #endif
 	if (!IsConnected())
 	{
-		ERRORLOG(L"CompletedSend - error - ip %s , socket id %u , send buffer length %u , send completed %u", GetTargetIP(), GetSocket(), m_SendBuffer->GetDataLength(), Transferred);
+		ERRORLOG(L"CompletedSend - error - ip %s , socket id %u , send buffer length %u , send completed %u", GetTargetIP(), GetSessionID(), m_SendBuffer->GetDataLength(), Transferred);
 
 		m_SendPending.unlock();
 
@@ -619,6 +643,7 @@ bool Session::CompletedSend(unsigned int Transferred)
 	return bRet;
 }
 
+// flush 하기
 bool Session::PostSend()
 {
 	if (false == IsConnected())
@@ -684,7 +709,8 @@ void Session::PostProcess()
 {
 	{
 		std::lock_guard Lock(m_RecvPacketLock);
-		if (m_RecvBuffer->GetDataLength() == 0)
+		unsigned int Len = 0;
+		if (IsCompletedPacket(Len, m_RecvBuffer) == false)
 			return;
 	}
 
@@ -719,28 +745,68 @@ void Session::ProcessCompletion()
 	
 	char Buffer[MAX_PACKET_SIZE];
 	unsigned int Len = 0;
-
-	char* Packet = nullptr;
-	while ((Packet = UnmarshallRaw(Buffer, Len)) != nullptr)
+	bool HasError = false;
+	try
 	{
-		OnDispatch(Packet, Len);
+		char* Packet = nullptr;
+		while ((Packet = UnmarshallRaw(Buffer, Len)) != nullptr)
+		{
+			OnDispatch(Packet, Len);
+		}
+	}
+	catch (std::exception& )
+	{
+		HasError = true;
 	}
 	
 	m_ProcPending.unlock();
+
+	if (HasError)
+	{
+		Disconnect(DISCONNECT_REASON_SEND_POSTSEND_ERROR, __WFILE__, __LINE__);
+	}
 
 	// 남이 있는거 있으면 한번더~
 	PostProcess();
 }
 
-void Session::ProcessReceivedData(char * Data, unsigned int & Len)
+int Session::ProcessPacket(char * Buffer, unsigned int & Len)
 {
 	if (m_Network.GetProcessMode() != PROCESS_MODE_USER)
-		return;
+		return -1;
 
-	char* Packet = nullptr;
-	while((Packet = UnmarshallRaw(Data, Len)) != nullptr)
+	int Count = 0;
+
+	bool HasError = false;
+
+	try
 	{
-		OnDispatch(Packet, Len);
+		char* Packet = nullptr;
+		while ((Packet = UnmarshallRaw(Buffer, Len)) != nullptr)
+		{
+			OnDispatch(Packet, Len);
+			Count++;
+		}
 	}
+	catch (std::exception&)
+	{
+		HasError = true;
+	}
+
+	if (HasError)
+	{
+		Disconnect(DISCONNECT_REASON_SEND_POSTSEND_ERROR, __WFILE__, __LINE__);
+	}
+
+	return Count;
+}
+
+int Session::ProcessPacket()
+{
+	char Buffer[MAX_PACKET_SIZE];
+	unsigned int Len = 0;
+
+	int Ret = ProcessPacket(Buffer, Len);
+	return Ret;
 }
 

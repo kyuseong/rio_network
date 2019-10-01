@@ -47,7 +47,7 @@ private:
 	int					m_ListenPort;			// listen port
 	SOCKET				m_ListenSocket;			// listen 소켓
 	std::unique_ptr<std::thread> m_Acceptor;	// acceptor thread
-
+	bool m_RunningAcceptor = false;
 public:
 	explicit Network(
 			const wchar_t* NetworkName, 
@@ -104,13 +104,15 @@ private:
 	// 패칫 처리 스레드
 	int ProcessWorkerThreadEntry();
 	// 크로징 시키는 스레드
-	int CloseingThreadEntry();
+	int ClosingThreadEntry();
 	// 클라이언트의 세션을 해제한다.
 	void AddClosingSession(Session * Session, const wchar_t * SrcFile, const unsigned int SrcLine);
 
 	//-------------------------------------------------------------------------
-	// 세션 할당
+	// 세션 관리
 	//-------------------------------------------------------------------------
+
+	// 세션 할당
 	Session* AllocateSession(SOCKET hSocket);
 	// 세션 해제
 	void ReleaseSession(Session * Session, const wchar_t * SrcFile, const unsigned int SrcLine);
@@ -121,7 +123,8 @@ private:
 	// 세션 들이 모두 종료할때 까지 기다림
 	bool WaitForClosedSession();
 	// 세션 풀에 세션들을 넣음
-	void PushFreeSocket(Session * Session);
+	void PushFreeSession(Session * Session);
+
 private:
 	//-------------------------------------------------------------------------
 	// 큐

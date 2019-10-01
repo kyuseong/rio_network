@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 	DummyServer::GetInstance()->Start(Address.c_str(), Port);
 
 	int Seq = 0;
-	while (1)
+	while(1)
 	{
 		ans_chat_msg1 SendPacket;
 		SendPacket.m_No = Seq++;

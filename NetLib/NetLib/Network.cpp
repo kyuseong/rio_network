@@ -115,7 +115,7 @@ public:
 
 			switch (pOvl->m_IOType)
 			{
-			case IO_RECV:
+			case IOTYPE_RECV:
 			{
 				Session->CompletedRecv(Transfer);
 				switch (m_Network->GetProcessMode())
@@ -130,7 +130,7 @@ public:
 				}
 			}
 			break;
-			case IO_SEND:
+			case IOTYPE_SEND:
 			{
 				Session->CompletedSend(Transfer);
 			}
@@ -194,7 +194,9 @@ public:
 
 	virtual int RunIOWorker(unsigned int ThreadId) override
 	{
-		//::SetThreadDescription(GetCurrentThread(), (m_NetworkName + L"_IoWorkerThread").c_str());
+#ifdef DEBUG_NETWORK
+		::SetThreadDescription(GetCurrentThread(), (m_NetworkName + L"_IoWorkerThread").c_str());
+#endif
 
 		RIOResultSet results;
 
@@ -222,7 +224,7 @@ public:
 
 				Session* ClientSession = Context->m_ClientSession;
 
-				if (IO_RECV == Context->GetIOType())
+				if (IOTYPE_RECV == Context->GetIOType())
 				{
 					ClientSession->CompletedRecv(Transferred);
 
@@ -237,12 +239,12 @@ public:
 						break;
 					}
 				}
-				else if (IO_SEND == Context->GetIOType())
+				else if (IOTYPE_SEND == Context->GetIOType())
 				{
 					ClientSession->CompletedSend(Transferred);
 				}
 
-				if (IO_RECV == Context->GetIOType())
+				if (IOTYPE_RECV == Context->GetIOType())
 				{
 					ClientSession->ReleaseRef(6, L"RunIOWorker", __LINE__);
 				}
@@ -314,7 +316,7 @@ void Network::StartThread()
 	}
 	m_ClosingThread = std::make_unique<std::thread>([this]() -> int
 	{
-		return this->CloseingThreadEntry();
+		return this->ClosingThreadEntry();
 	});
 
 	switch (GetProcessMode())
@@ -339,7 +341,7 @@ void Network::StartThread()
 	}
 }
 
-
+// 시작 
 void Network::Start(CreateClientSessionFunc CreateFunction)
 {
 	if (m_IoThreadCount == 0) {
@@ -367,28 +369,10 @@ void Network::Start(CreateClientSessionFunc CreateFunction)
 	StartThread();
 }
 
+// 종료
 void Network::Shutdown()
 {
-	m_Running = false;
-
 	StopAcceptor();
-
-	m_IOModel->Shutdown();
-	
-	for (int i = 0;i < m_ProcessThreads.size();++i)
-		EnqueueProcess(0, 0, 0);
-
-	for (auto& Thread : m_IOThreads)
-	{
-		Thread->join();
-	}
-	m_IOThreads.clear();
-
-	for (auto& Thread : m_ProcessThreads)
-	{
-		Thread->join();
-	}
-	m_ProcessThreads.clear();
 
 	// 접속 중인 세션 접속 끊기
 	{
@@ -407,6 +391,27 @@ void Network::Shutdown()
 	{
 		Sleep(1000);
 	}
+
+	m_Running = false;
+
+
+	m_IOModel->Shutdown();
+	
+	for (int i = 0;i < m_ProcessThreads.size();++i)
+		EnqueueProcess(0, 0, 0);
+
+	for (auto& Thread : m_IOThreads)
+	{
+		Thread->join();
+	}
+	m_IOThreads.clear();
+
+	for (auto& Thread : m_ProcessThreads)
+	{
+		Thread->join();
+	}
+	m_ProcessThreads.clear();
+
 	if (m_ClosingThread)
 	{
 		// closing thread 셧다운
@@ -425,7 +430,6 @@ void*	Network::GetCompletionQueue(unsigned int ThreadId) const
 {
 	return m_IOModel->GetCompletionQueue(ThreadId);
 }
-
 
 bool Network::DequeueProcess(Session *&Session, DWORD &Transfer, WSAOVERLAPPED *&pOvl, DWORD &dwLastError) const
 {
@@ -471,9 +475,10 @@ int Network::IoWorkerThreadEntry(unsigned int ThreadID)
 
 int Network::ProcessWorkerThreadEntry()
 {
-	//::SetThreadDescription(GetCurrentThread(), (m_NetworkName + L"_ProcessWorkerThread").c_str());
+#ifdef DEBUG_NETWORK
+	::SetThreadDescription(GetCurrentThread(), (m_NetworkName + L"_ProcessWorkerThread").c_str());
+#endif
 	
-
 	while (m_Running) {
 		DWORD Transfer = 0;
 		Session *Session = NULL;
@@ -497,12 +502,12 @@ int Network::ProcessWorkerThreadEntry()
 
 		switch (OverlappedBuffer->GetIOType())
 		{
-		case IO_PROCESS:
+		case IOTYPE_PROCESS:
 			try {
 				Session->ProcessCompletion();
 				break;
 			}
-			catch (const std::exception e) {
+			catch (std::exception& ) {
 				ERRORLOG(L"ProcessCompletion error");
 			}
 		default:
@@ -514,14 +519,15 @@ int Network::ProcessWorkerThreadEntry()
 		Session->ReleaseRef(9, L"ProcessWorkerThreadEntry", __LINE__);
 	}
 	
-	
 	return 0;
 }
 
-int Network::CloseingThreadEntry()
+// closing 를 처리하는 thread entry
+int Network::ClosingThreadEntry()
 {
 	for (;;)
 	{
+		// 큐에 있는 session(closing 할)을 해제한다.
 		Session* Session = nullptr;
 		{
 			std::unique_lock<std::mutex> lock(m_ClosingSessionListLock);
@@ -544,10 +550,10 @@ int Network::CloseingThreadEntry()
 	return 0;
 }
 
+// 세션 할당
 Session* Network::AllocateSession(SOCKET hSocket)
 {
 	std::lock_guard lock(m_SessionListLock);
-
 	if (m_FreeSessionList.empty()) {
 		return nullptr;
 	}
@@ -573,6 +579,8 @@ Session* Network::AllocateSession(SOCKET hSocket)
 	return Session;
 }
 
+// 세션을 실제로 해제한다.
+// closing thread 에서 해제함
 void Network::ReleaseSession(Session * Session, const wchar_t * SrcFile, const unsigned int SrcLine)
 {
 	if (!Session) {
@@ -611,9 +619,9 @@ void Network::CreateSessionPool(CreateClientSessionFunc CreateFunction)
 		try {
 			iSessionStub* iSess = CreateFunction();
 
-			Session* Sess= new Session(*this, i, iSess);
+			Session* Sess = new Session(*this, i, iSess);
 
-			PushFreeSocket(Sess);
+			PushFreeSession(Sess);
 		}
 		catch (const std::bad_alloc &) {
 			ERRORLOG(L"Network::CreateSessionPool - new fail Error : %s\r\n", GetLastErrorMessage(::GetLastError()).c_str());
@@ -665,8 +673,8 @@ bool Network::WaitForClosedSession()
 	return true;
 }
 
-
-void Network::PushFreeSocket(Session * Session)
+// free 
+void Network::PushFreeSession(Session * Session)
 {
 	std::lock_guard lock(m_SessionListLock);
 
@@ -719,10 +727,12 @@ SOCKET Network::CreateListenSocket(const wchar_t* Address, unsigned short port, 
 				break;
 			}
 		}
+
 		std::string address = ws2s(Address);
 		if (address.empty()) {
 			address = "0.0.0.0";
 		}
+
 		sockaddr_in	addr{};
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(port);
@@ -755,6 +765,8 @@ void Network::StartAcceptor(const wchar_t* ListenAddr, int ListenPort, bool NoDe
 
 	if (m_Acceptor == nullptr)
 	{
+		m_RunningAcceptor = true;
+
 		m_Acceptor = std::make_unique<std::thread>([this]()
 		{
 			this->AcceptThread();
@@ -764,6 +776,8 @@ void Network::StartAcceptor(const wchar_t* ListenAddr, int ListenPort, bool NoDe
 
 void Network::StopAcceptor()
 {
+	m_RunningAcceptor = false;
+
 	if (m_ListenSocket != INVALID_SOCKET)
 	{
 		::closesocket(m_ListenSocket);
@@ -779,8 +793,10 @@ void Network::StopAcceptor()
 
 int Network::AcceptThread()
 {
-	//::SetThreadDescription(GetCurrentThread(), (m_NetworkName + L"_AcceptThread").c_str());
-	while (m_Running)
+#ifdef DEBUG_NETWORK
+	::SetThreadDescription(GetCurrentThread(), (m_NetworkName + L"_AcceptThread").c_str());
+#endif
+	while (m_RunningAcceptor)
 	{
 		// accept
 		SOCKET AcceptedSock = accept(m_ListenSocket, NULL, NULL);

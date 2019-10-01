@@ -57,7 +57,8 @@ void DummySession::ResChatMsg(char * pData)
 {
 	ans_chat_msg * pRecvPacket = reinterpret_cast<ans_chat_msg *>(pData);
 
-	Assert(pRecvPacket->m_No == m_No);
+	
+	NET_ASSERT(pRecvPacket->m_No == m_No);
 
 	ask_chat_msg SendPacket;
 	SendPacket.m_No = ++m_No;
@@ -71,7 +72,7 @@ void DummySession::ResChatMsg1(char * pData)
 	
 	if (m_Seq != 0)
 	{
-		Assert(m_Seq + 1 == pRecvPacket->m_No);
+		NET_ASSERT(m_Seq + 1 == pRecvPacket->m_No);
 	}
 
 	m_Seq = pRecvPacket->m_No;

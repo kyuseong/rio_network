@@ -107,7 +107,7 @@ public:
 	// 리시브가 완료되었다.
 	void CompletedRecv(unsigned int Transferred);
 	// 쌓여있는 패킷을 처리한다.
-	void ProcessReceivedData(char * pData, unsigned int & Len);
+	int ProcessPacket(char * Buffer, unsigned int & Len);
 
 	//----------------------------------------------------------------------------
 	// IO SEND
@@ -133,15 +133,20 @@ public:
 	virtual bool Marshall(void* Data, unsigned int Len, RingBuffer* SendBuffer);
 	// 패킷 언마샬링 실제
 	char* UnmarshallRaw(char * Data, unsigned int &Len);
+	
+	// 패킷이 완성되었나 체크하기
+	virtual bool IsCompletedPacket(unsigned int &Len, RingBuffer* RecvBuffer);
 	// 패킷 언마살링
 	virtual char* Unmarshall(char * Data, unsigned int &Len, RingBuffer* RecvBuffer);
-	
+	// 패킷 처리
+	virtual int ProcessPacket();
+
 	//----------------------------------------------------------------------------
 	// 접속 종료
 	//----------------------------------------------------------------------------
 	// 서버에서 접속을 종료 시킨다.
 	// 강제로 이 함수를 호출 해도 정상 동작한다.
-	// 실제로 Ref Count 가 0이 되면 이 세션은 끊어진다. 
+	// 실제로 Ref Count 가 0이 되면111 이 세션은 끊어진다. 
 	// (Close함수가 호출 되고 OnClose을 통해 처리 할수 있게된다)
 	void Disconnect(eDISCONNECT_REASON Reason, const wchar_t * SrcFile, const unsigned int SrcLine);
 private:
@@ -152,18 +157,26 @@ private:
 	// 이 부분을 구현해서 처리하세요~
 	//----------------------------------------------------------------------------
 protected:
+
+	// accept 됨
 	void OnAccept(const wchar_t* TargetAddress, const int TargetPort)
 	{
 		m_iSession->OnAccept(this, TargetAddress, TargetPort);
 	}
+
+	// connect 됨
 	void OnConnect(const wchar_t* TargetAddress, const int TargetPort)
 	{
 		m_iSession->OnConnect(this, TargetAddress, TargetPort);
 	}
+
+	// 접속 종료됨
 	void OnClose()
 	{
 		m_iSession->OnClose(this);
 	}
+
+	// dispatch 됨
 	void OnDispatch(char * Data, unsigned int Len)
 	{
 		m_iSession->OnDispatch(this, Data, Len);
@@ -195,7 +208,10 @@ public:
 		return m_iSession;
 	}
 private:
+	// 원격 주소 셋팅
 	void SetPeerIP(const wchar_t* PeerAddress, const int PeerPort);
+	// 서버 주소 셋팅
 	void SetTargetIP(const wchar_t* TargetAddress, const int TargetPort);
+	// attach
 	void Attach(SOCKET hSocket);
 };
